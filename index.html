@@ -21,7 +21,7 @@ async function analyze() {
         const base64 = reader.result.split(",")[1]; // remove prefix
 
         // Call Azure Function
-        const response = await fetch("https://<YOUR-FUNCTION-URL>", {
+        const response = await fetch("https://image-analyzer-fdatfkbtcrbxb3cp.westeurope-01.azurewebsites.net/api/analyzeimage?code=DRj0Fbh4BG5M9_oH4MfSMJXwTaaes2YBG41OTQT73S63AzFuo4kP3A==", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ imageBase64: base64 })
