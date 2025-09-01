@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+this is the code that i added into github so update it
+
+"<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -322,7 +324,67 @@
         </div>
         
         <div class="tab-container">
-      
+            <div class="tabs">
+                <div class="tab active" data-tab="azure-setup">Azure Setup</div>
+                <div class="tab" data-tab="function-setup">Azure Function Setup</div>
+                <div class="tab" data-tab="github-setup">GitHub Deployment</div>
+            </div>
+            
+            <div class="tab-content active" id="azure-setup">
+                <h3>Step-by-Step: Creating Azure Computer Vision Resource</h3>
+                <ol>
+                    <li>Go to the <a href="https://portal.azure.com" target="_blank">Azure Portal</a> and sign in</li>
+                    <li>Click on "Create a resource" (the + icon in the top left)</li>
+                    <li>Search for "Computer Vision" and select it from the results</li>
+                    <li>Click the "Create" button</li>
+                    <li>Fill in the required details:
+                        <ul>
+                            <li><strong>Name:</strong> Choose a unique name for your resource</li>
+                            <li><strong>Subscription:</strong> Select your Azure subscription</li>
+                            <li><strong>Location:</strong> Choose a region close to your users</li>
+                            <li><strong>Pricing tier:</strong> Select F0 (free) for testing or S1 for production</li>
+                            <li><strong>Resource group:</strong> Create new or select existing</li>
+                        </ul>
+                    </li>
+                    <li>Click "Review + create" and then "Create"</li>
+                    <li>Wait for deployment to complete, then click "Go to resource"</li>
+                    <li>From the overview page, copy your "Endpoint" and one of your "Keys"</li>
+                </ol>
+            </div>
+            
+            <div class="tab-content" id="function-setup">
+                <h3>Azure Function Setup</h3>
+                <p>Create an Azure Function to securely handle your API key:</p>
+                
+                <ol>
+                    <li>In the Azure Portal, click "Create a resource"</li>
+                    <li>Search for "Function App" and select it</li>
+                    <li>Click "Create" and fill in the details:
+                        <ul>
+                            <li><strong>Name:</strong> Choose a unique name</li>
+                            <li><strong>Runtime stack:</strong> Node.js</li>
+                            <li><strong>Region:</strong> Same as your Computer Vision resource</li>
+                        </ul>
+                    </li>
+                    <li>Go to your Function App after creation</li>
+                    <li>Click on "Configuration" in the left sidebar</li>
+                    <li>Add two new application settings:
+                        <ul>
+                            <li><strong>VISION_ENDPOINT:</strong> Your Computer Vision endpoint</li>
+                            <li><strong>VISION_KEY:</strong> Your Computer Vision API key</li>
+                        </ul>
+                    </li>
+                    <li>Create a new function:
+                        <ul>
+                            <li>Click "Functions" in the left sidebar</li>
+                            <li>Click "Create" and select "HTTP trigger"</li>
+                            <li>Name it "ocr" and set Authorization level to "Anonymous"</li>
+                        </ul>
+                    </li>
+                    <li>Replace the default code with the following:</li>
+                </ol>
+                
+                <div class="backend-code">
 // index.js - Azure Function code
 const axios = require('axios');
 
@@ -598,4 +660,4 @@ node_modules/
         }
     </script>
 </body>
-</html>
+</html>"
