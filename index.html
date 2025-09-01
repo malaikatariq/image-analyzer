@@ -1,6 +1,4 @@
-this is the code that i added into github so update it
-
-"<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -279,6 +277,14 @@ this is the code that i added into github so update it
             border-left: 4px solid #ffc107;
             margin: 15px 0;
         }
+        
+        .function-url-info {
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #4caf50;
+            margin: 15px 0;
+        }
     </style>
 </head>
 <body>
@@ -302,9 +308,9 @@ this is the code that i added into github so update it
                     <img id="imagePreview" alt="Image preview">
                 </div>
                 
-                <div class="form-group">
-                    <label for="functionUrl">Azure Function URL:</label>
-                    <input type="text" id="functionUrl" placeholder="https://your-function.azurewebsites.net/api/ocr">
+                <div class="function-url-info">
+                    <p><strong>Azure Function URL:</strong> Pre-configured and ready to use!</p>
+                    <p><small>Using: <span id="displayFunctionUrl">https://your-ocr-function.azurewebsites.net/api/analyzeimage</span></small></p>
                 </div>
                 
                 <button id="extractBtn" class="extract-btn" disabled>Extract Text</button>
@@ -361,7 +367,7 @@ this is the code that i added into github so update it
                     <li>Search for "Function App" and select it</li>
                     <li>Click "Create" and fill in the details:
                         <ul>
-                            <li><strong>Name:</strong> Choose a unique name</li>
+                            <li><strong>Name:</strong> Choose a unique name (e.g., "your-ocr-function")</li>
                             <li><strong>Runtime stack:</strong> Node.js</li>
                             <li><strong>Region:</strong> Same as your Computer Vision resource</li>
                         </ul>
@@ -378,7 +384,7 @@ this is the code that i added into github so update it
                         <ul>
                             <li>Click "Functions" in the left sidebar</li>
                             <li>Click "Create" and select "HTTP trigger"</li>
-                            <li>Name it "ocr" and set Authorization level to "Anonymous"</li>
+                            <li>Name it "analyzeimage" and set Authorization level to "Anonymous"</li>
                         </ul>
                     </li>
                     <li>Replace the default code with the following:</li>
@@ -391,12 +397,47 @@ const axios = require('axios');
 module.exports = async function (context, req) {
     context.log('JavaScript HTTP trigger function processed a request.');
     
+    // Set CORS headers for all responses
+    const headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    };
+    
     try {
-        // Check if the request contains image data
-        if (!req.body || !req.body.imageData) {
+        // Handle preflight OPTIONS request
+        if (req.method === 'OPTIONS') {
+            context.res = {
+                status: 200,
+                headers: headers,
+                body: ''
+            };
+            return;
+        }
+        
+        context.log('Request method:', req.method);
+        
+        // Check if the request contains data
+        if (!req.body) {
+            context.log('Error: No request body found');
             context.res = {
                 status: 400,
-                body: "Please provide imageData in the request body"
+                headers: headers,
+                body: JSON.stringify({ error: "Please provide a request body with imageData" })
+            };
+            return;
+        }
+        
+        context.log('Request body received:', JSON.stringify(req.body).substring(0, 200) + '...');
+        
+        // Check if imageData exists in the request body
+        if (!req.body.imageData) {
+            context.log('Error: imageData missing from request body');
+            context.res = {
+                status: 400,
+                headers: headers,
+                body: JSON.stringify({ error: "Please provide imageData in the request body" })
             };
             return;
         }
@@ -405,51 +446,67 @@ module.exports = async function (context, req) {
         const endpoint = process.env.VISION_ENDPOINT;
         const key = process.env.VISION_KEY;
         
+        context.log('VISION_ENDPOINT:', endpoint ? 'Exists' : 'Missing');
+        context.log('VISION_KEY:', key ? 'Exists' : 'Missing');
+        
         if (!endpoint || !key) {
+            context.log('Error: Missing environment variables');
             context.res = {
                 status: 500,
-                body: "Server configuration error: Vision credentials not set"
+                headers: headers,
+                body: JSON.stringify({ error: "Server configuration error: Vision credentials not set" })
             };
             return;
         }
         
         // Remove data URL prefix if present
         const imageData = req.body.imageData.replace(/^data:image\/\w+;base64,/, '');
+        context.log('Image data length:', imageData.length);
+        
         const imageBuffer = Buffer.from(imageData, 'base64');
+        context.log('Image buffer length:', imageBuffer.length);
         
         // Call Azure Computer Vision OCR API
+        context.log('Calling Azure Computer Vision API...');
         const visionResponse = await axios.post(
-            ${endpoint}/vision/v3.2/ocr,
+            `${endpoint}/vision/v3.2/ocr`,
             imageBuffer,
             {
                 headers: {
                     'Ocp-Apim-Subscription-Key': key,
                     'Content-Type': 'application/octet-stream'
-                }
+                },
+                timeout: 30000 // 30 second timeout
             }
         );
         
+        context.log('Azure Computer Vision API call successful');
+        
         context.res = {
             status: 200,
-            body: visionResponse.data,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*' // Important for web app CORS
-            }
+            headers: headers,
+            body: visionResponse.data
         };
     } catch (error) {
-        context.log.error('Error:', error);
+        context.log.error('Error details:', error);
+        
+        // More detailed error information
+        if (error.response) {
+            context.log.error('Azure API response error:', error.response.status, error.response.statusText);
+            context.log.error('Azure API response data:', error.response.data);
+        } else if (error.request) {
+            context.log.error('No response received from Azure API:', error.request);
+        } else {
+            context.log.error('Error setting up request:', error.message);
+        }
         
         context.res = {
             status: 500,
-            body: {
+            headers: headers,
+            body: JSON.stringify({
                 error: "Failed to process image",
                 details: error.message
-            },
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
+            })
         };
     }
 };
@@ -491,6 +548,10 @@ node_modules/
                     <li>After deployment, get your Static Web App URL</li>
                     <li>Update your Azure Function CORS settings to include your Static Web App URL</li>
                 </ol>
+                
+                <div class="note">
+                    <strong>Important:</strong> After deploying your Azure Function, update the <code>functionUrl</code> variable in the JavaScript code with your actual function URL.
+                </div>
             </div>
         </div>
     </div>
@@ -509,18 +570,14 @@ node_modules/
         const loading = document.getElementById('loading');
         const tabs = document.querySelectorAll('.tab');
         const tabContents = document.querySelectorAll('.tab-content');
-        const functionUrlInput = document.getElementById('functionUrl');
+        const displayFunctionUrl = document.getElementById('displayFunctionUrl');
         
-        // Store the function URL in localStorage if provided
-        if (localStorage.getItem('functionUrl')) {
-            functionUrlInput.value = localStorage.getItem('functionUrl');
-        }
+        // Pre-configured Azure Function URL - UPDATE THIS WITH YOUR ACTUAL FUNCTION URL
+        const functionUrl = "https://image-analyzer-fdatfkbtcrbxb3cp.westeurope-01.azurewebsites.net/api/analyzeimage?code=DRj0Fbh4BG5M9_oH4MfSMJXwTaaes2YBG41OTQT73S63AzFuo4kP3A==";
         
-        functionUrlInput.addEventListener('input', () => {
-            localStorage.setItem('functionUrl', functionUrlInput.value);
-            extractBtn.disabled = !functionUrlInput.value || !imagePreview.src;
-        });
-
+        // Display the function URL
+        displayFunctionUrl.textContent = functionUrl;
+        
         // Event listeners
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
@@ -589,7 +646,7 @@ node_modules/
                     reader.onload = function(e) {
                         imagePreview.src = e.target.result;
                         imagePreview.style.display = 'block';
-                        extractBtn.disabled = !functionUrlInput.value;
+                        extractBtn.disabled = false;
                     };
                     reader.readAsDataURL(file);
                 }
@@ -601,12 +658,6 @@ node_modules/
         async function extractText() {
             if (!imagePreview.src) {
                 alert('Please upload an image first');
-                return;
-            }
-            
-            const functionUrl = functionUrlInput.value;
-            if (!functionUrl) {
-                alert('Please enter your Azure Function URL');
                 return;
             }
             
@@ -627,14 +678,14 @@ node_modules/
                 });
                 
                 if (!response.ok) {
-                    throw new Error(Azure Function error: ${response.status} ${response.statusText});
+                    throw new Error(`Azure Function error: ${response.status} ${response.statusText}`);
                 }
                 
                 const data = await response.json();
                 processOCRResult(data);
             } catch (error) {
                 console.error('Error:', error);
-                resultText.textContent = Error: ${error.message}. Please check your Function URL and try again.;
+                resultText.textContent = `Error: ${error.message}. Please check your Function URL and try again.`;
             } finally {
                 loading.style.display = 'none';
             }
@@ -660,4 +711,4 @@ node_modules/
         }
     </script>
 </body>
-</html>"
+</html>
