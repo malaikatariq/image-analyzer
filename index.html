@@ -1,148 +1,601 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Image to Text Converter</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #6B73FF, #000DFF);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      width: 600px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-      display: flex;
-      gap: 20px;
-    }
-    .left, .right {
-      flex: 1;
-    }
-    .drop-box {
-      border: 2px dashed #3a6ea5;
-      border-radius: 5px;
-      padding: 30px;
-      text-align: center;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
-    .drop-box:hover {
-      background-color: #f0f0f0;
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    textarea {
-      width: 100%;
-      height: 150px;
-      padding: 10px;
-      resize: none;
-    }
-    img {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image to Text Converter - Azure AI</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            margin: 40px 0;
+        }
+        
+        header {
+            background: #4a6fa5;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+        }
+        
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+        
+        .upload-section {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        .result-section {
+            flex: 1;
+            padding: 20px;
+            border-left: 1px solid #eee;
+        }
+        
+        .drop-area {
+            border: 2px dashed #4a6fa5;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .drop-area:hover {
+            background-color: #f0f5ff;
+        }
+        
+        .drop-area.highlight {
+            background-color: #e0ebff;
+            border-color: #2b5aaa;
+        }
+        
+        .drop-area i {
+            font-size: 50px;
+            color: #4a6fa5;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .browse-btn {
+            background: #4a6fa5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 15px;
+            transition: background 0.3s;
+        }
+        
+        .browse-btn:hover {
+            background: #3a5a8a;
+        }
+        
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .extract-btn {
+            background: #5cb85c;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 20px 0;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        
+        .extract-btn:hover {
+            background: #4ca64c;
+        }
+        
+        .extract-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .result-area {
+            min-height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            background: #f9f9f9;
+            white-space: pre-wrap;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #4a6fa5;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4a6fa5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .tab-container {
+            margin: 20px 0;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: #4a6fa5;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .backend-code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .note {
+            background: #fff8e1;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="left">
-      <div class="drop-box" id="dropBox">
-        <p>Drag & Drop your image here</p>
-        <p>or</p>
-        <button id="browseBtn">Browse Files</button>
-        <input type="file" id="imageInput" accept="image/*" style="display:none;">
-      </div>
-      <img id="preview" src="" alt="">
-      <button id="extractBtn">Extract Text</button>
-    </div>
-    <div class="right">
-      <h3>Extracted Text:</h3>
-      <textarea id="output" readonly></textarea>
-    </div>
-  </div>
+    <div class="container">
+        <header>
+            <h1>Image to Text Converter</h1>
+            <p class="description">Extract text from images using Azure AI Computer Vision</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="drop-area" id="dropArea">
+                    <i>📁</i>
+                    <h3>Drag & Drop your image here</h3>
+                    <p>or</p>
+                    <span class="browse-btn">Browse Files</span>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                </div>
+                
+                <div class="preview-container">
+                    <img id="imagePreview" alt="Image preview">
+                </div>
+                
+                <div class="form-group">
+                    <label for="functionUrl">Azure Function URL:</label>
+                    <input type="text" id="functionUrl" placeholder="https://your-function.azurewebsites.net/api/ocr">
+                </div>
+                
+                <button id="extractBtn" class="extract-btn" disabled>Extract Text</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing image...</p>
+                </div>
+            </div>
+            
+            <div class="result-section">
+                <h3>Extracted Text:</h3>
+                <div class="result-area" id="resultText">
+                    Text will appear here after processing...
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-container">
+      
+// index.js - Azure Function code
+const axios = require('axios');
 
-  <script>
-    // Hardcoded Azure Function URL
-    const azureFunctionUrl = "https://image-analyzer-fdatfkbtcrbxb3cp.westeurope-01.azurewebsites.net/api/analyzeimage?code=DRj0Fbh4BG5M9_oH4MfSMJXwTaaes2YBG41OTQT73S63AzFuo4kP3A==";
-
-    const dropBox = document.getElementById("dropBox");
-    const imageInput = document.getElementById("imageInput");
-    const browseBtn = document.getElementById("browseBtn");
-    const preview = document.getElementById("preview");
-    const extractBtn = document.getElementById("extractBtn");
-    const output = document.getElementById("output");
-
-    browseBtn.addEventListener("click", () => imageInput.click());
-
-    dropBox.addEventListener("dragover", e => {
-      e.preventDefault();
-      dropBox.style.background = "#f0f0f0";
-    });
-
-    dropBox.addEventListener("dragleave", e => {
-      e.preventDefault();
-      dropBox.style.background = "#fff";
-    });
-
-    dropBox.addEventListener("drop", e => {
-      e.preventDefault();
-      dropBox.style.background = "#fff";
-      const file = e.dataTransfer.files[0];
-      handleFile(file);
-    });
-
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      handleFile(file);
-    });
-
-    function handleFile(file) {
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => preview.src = reader.result;
-      reader.readAsDataURL(file);
+module.exports = async function (context, req) {
+    context.log('JavaScript HTTP trigger function processed a request.');
+    
+    try {
+        // Check if the request contains image data
+        if (!req.body || !req.body.imageData) {
+            context.res = {
+                status: 400,
+                body: "Please provide imageData in the request body"
+            };
+            return;
+        }
+        
+        // Get Azure Computer Vision credentials from environment variables
+        const endpoint = process.env.VISION_ENDPOINT;
+        const key = process.env.VISION_KEY;
+        
+        if (!endpoint || !key) {
+            context.res = {
+                status: 500,
+                body: "Server configuration error: Vision credentials not set"
+            };
+            return;
+        }
+        
+        // Remove data URL prefix if present
+        const imageData = req.body.imageData.replace(/^data:image\/\w+;base64,/, '');
+        const imageBuffer = Buffer.from(imageData, 'base64');
+        
+        // Call Azure Computer Vision OCR API
+        const visionResponse = await axios.post(
+            ${endpoint}/vision/v3.2/ocr,
+            imageBuffer,
+            {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': key,
+                    'Content-Type': 'application/octet-stream'
+                }
+            }
+        );
+        
+        context.res = {
+            status: 200,
+            body: visionResponse.data,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*' // Important for web app CORS
+            }
+        };
+    } catch (error) {
+        context.log.error('Error:', error);
+        
+        context.res = {
+            status: 500,
+            body: {
+                error: "Failed to process image",
+                details: error.message
+            },
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
+        };
     }
+};
+                </div>
+                
+                <div class="note">
+                    <strong>Note:</strong> You'll also need to add CORS settings in your Function App:
+                    <ol>
+                        <li>Go to your Function App in Azure Portal</li>
+                        <li>Click on "CORS" in the left sidebar</li>
+                        <li>Add your website URL or "*" for testing</li>
+                        <li>Click "Save"</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="github-setup">
+                <h3>GitHub Deployment for Static Web App</h3>
+                
+                <ol>
+                    <li>Create a new GitHub repository</li>
+                    <li>Upload your HTML file (name it index.html) and create a .gitignore file with:
+                        <div class="backend-code">
+# Ignore node modules
+node_modules/
+# Ignore environment files
+.env
+                        </div>
+                    </li>
+                    <li>In Azure Portal, create a "Static Web App" resource</li>
+                    <li>Connect it to your GitHub repository</li>
+                    <li>Configure build settings:
+                        <ul>
+                            <li><strong>App location:</strong> / (if your HTML is in root)</li>
+                            <li><strong>Api location:</strong> (leave empty)</li>
+                            <li><strong>Output location:</strong> (leave empty)</li>
+                        </ul>
+                    </li>
+                    <li>After deployment, get your Static Web App URL</li>
+                    <li>Update your Azure Function CORS settings to include your Static Web App URL</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>Powered by Azure AI Computer Vision | Created with HTML, CSS, and JavaScript</p>
+    </footer>
 
-    extractBtn.addEventListener("click", async () => {
-      const file = imageInput.files[0];
-      if (!file) return alert("Please select an image first!");
-
-      const formData = new FormData();
-      formData.append("image", file);
-
-      try {
-        const response = await fetch(azureFunctionUrl, {
-          method: "POST",
-          body: formData
+    <script>
+        // DOM elements
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const extractBtn = document.getElementById('extractBtn');
+        const resultText = document.getElementById('resultText');
+        const loading = document.getElementById('loading');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const functionUrlInput = document.getElementById('functionUrl');
+        
+        // Store the function URL in localStorage if provided
+        if (localStorage.getItem('functionUrl')) {
+            functionUrlInput.value = localStorage.getItem('functionUrl');
+        }
+        
+        functionUrlInput.addEventListener('input', () => {
+            localStorage.setItem('functionUrl', functionUrlInput.value);
+            extractBtn.disabled = !functionUrlInput.value || !imagePreview.src;
         });
 
-        if (!response.ok) throw new Error("Text extraction failed.");
-
-        const result = await response.json();
-        output.value = result.text || "No text found.";
-      } catch (err) {
-        console.error(err);
-        alert("Failed to extract text.");
-      }
-    });
-  </script>
+        // Event listeners
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        dropArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Tab functionality
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show active content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            handleFiles(files);
+        }
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        extractBtn.disabled = !functionUrlInput.value;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+        
+        extractBtn.addEventListener('click', extractText);
+        
+        async function extractText() {
+            if (!imagePreview.src) {
+                alert('Please upload an image first');
+                return;
+            }
+            
+            const functionUrl = functionUrlInput.value;
+            if (!functionUrl) {
+                alert('Please enter your Azure Function URL');
+                return;
+            }
+            
+            loading.style.display = 'block';
+            resultText.textContent = 'Processing...';
+            
+            try {
+                // Convert image to base64
+                const imageData = imagePreview.src;
+                
+                // Call your Azure Function
+                const response = await fetch(functionUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ imageData: imageData }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(Azure Function error: ${response.status} ${response.statusText});
+                }
+                
+                const data = await response.json();
+                processOCRResult(data);
+            } catch (error) {
+                console.error('Error:', error);
+                resultText.textContent = Error: ${error.message}. Please check your Function URL and try again.;
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function processOCRResult(data) {
+            let extractedText = '';
+            
+            if (data.regions && data.regions.length > 0) {
+                for (const region of data.regions) {
+                    for (const line of region.lines) {
+                        for (const word of line.words) {
+                            extractedText += word.text + ' ';
+                        }
+                        extractedText += '\n';
+                    }
+                }
+            } else {
+                extractedText = 'No text detected in the image.';
+            }
+            
+            resultText.textContent = extractedText;
+        }
+    </script>
 </body>
 </html>
